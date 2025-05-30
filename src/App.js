@@ -120,6 +120,7 @@ function App() {
                     handleTimeout={handleTimeout}
                     loading={loading}
                     error={error}
+                    key={currentQuestionIndex}
                   />
                 )
               ) : (

@@ -12,11 +12,10 @@ const Question = ({
     error
 }) => {
     const [selectedAnswer, setSelectedAnswer] = useState(null);
-    const [questionTimeout, setQuestionTimeout] = useState(false);
 
+    // Reset selected answer ketika soal berubah
     useEffect(() => {
         setSelectedAnswer(null);
-        setQuestionTimeout(false);
     }, [currentIndex]);
 
     const handleSelectAnswer = (answer) => {
@@ -26,8 +25,13 @@ const Question = ({
         }, 500);
     };
 
+    // Jika masih loading, tampilkan loading indicator
     if (loading) return <div className="loading">Memuat soal...</div>;
+
+    // Jika ada error, tampilkan error
     if (error) return <div className="error">{error}</div>;
+
+    // Jika question belum ada (null/undefined), tetap tampilkan loading
     if (!question) return <div className="loading">Memuat soal...</div>;
 
     return (
@@ -36,11 +40,8 @@ const Question = ({
                 <h2>Soal {currentIndex + 1} dari {totalQuestions}</h2>
                 <QuizTimer
                     duration={120}
-                    onTimeout={() => {
-                        setQuestionTimeout(true);
-                        handleTimeout();
-                    }}
-                    key={currentIndex}
+                    onTimeout={handleTimeout}
+                    key={currentIndex} // Key penting untuk reset timer
                 />
             </div>
 
@@ -51,14 +52,14 @@ const Question = ({
                     <button
                         className={`answer-btn ${selectedAnswer === 'True' ? 'selected' : ''}`}
                         onClick={() => handleSelectAnswer('True')}
-                        disabled={questionTimeout || selectedAnswer !== null}
+                        disabled={selectedAnswer !== null}
                     >
                         Benar
                     </button>
                     <button
                         className={`answer-btn ${selectedAnswer === 'False' ? 'selected' : ''}`}
                         onClick={() => handleSelectAnswer('False')}
-                        disabled={questionTimeout || selectedAnswer !== null}
+                        disabled={selectedAnswer !== null}
                     >
                         Salah
                     </button>
