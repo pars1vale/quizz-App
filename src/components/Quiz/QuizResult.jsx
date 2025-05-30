@@ -1,71 +1,46 @@
-import { useEffect, useState } from 'react';
-import QuizTimer from './QuizTimer';
 import './Quiz.css';
 
-const Question = ({
-    question,
-    currentIndex,
-    totalQuestions,
-    handleAnswer,
-    handleTimeout,
-    loading,
-    error
-}) => {
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
-    const [questionTimeout, setQuestionTimeout] = useState(false);
-
-    useEffect(() => {
-        setSelectedAnswer(null);
-        setQuestionTimeout(false);
-    }, [currentIndex]);
-
-    const handleSelectAnswer = (answer) => {
-        setSelectedAnswer(answer);
-        setTimeout(() => {
-            handleAnswer(answer);
-        }, 500);
+const QuizResult = ({ questions, answers, resetQuiz }) => {
+    // Hitung skor dengan benar
+    const calculateScore = () => {
+        let correct = 0;
+        questions.forEach((q, index) => {
+            if (answers[index] === q.correct_answer) {
+                correct++;
+            }
+        });
+        return correct;
     };
 
-    if (loading) return <div className="loading">Memuat soal...</div>;
-    if (error) return <div className="error">{error}</div>;
-    if (!question) return <div className="loading">Memuat soal...</div>;
+    const correctAnswers = calculateScore();
+    const totalQuestions = questions.length;
 
     return (
-        <div className="question-container">
-            <div className="quiz-header">
-                <h2>Soal {currentIndex + 1} dari {totalQuestions}</h2>
-                <QuizTimer
-                    duration={120}
-                    onTimeout={() => {
-                        setQuestionTimeout(true);
-                        handleTimeout();
-                    }}
-                    key={currentIndex}
-                />
-            </div>
+        <div className="result-container">
+            <h2>Hasil Kuis Film</h2>
 
-            <div className="question-content">
-                <h3 dangerouslySetInnerHTML={{ __html: question.question }} />
+            <div className="result-summary">
+                <div className="result-card correct">
+                    <h3>Benar</h3>
+                    <p>{correctAnswers}</p>
+                </div>
 
-                <div className="answer-options">
-                    <button
-                        className={`answer-btn ${selectedAnswer === 'True' ? 'selected' : ''}`}
-                        onClick={() => handleSelectAnswer('True')}
-                        disabled={questionTimeout || selectedAnswer !== null}
-                    >
-                        Benar
-                    </button>
-                    <button
-                        className={`answer-btn ${selectedAnswer === 'False' ? 'selected' : ''}`}
-                        onClick={() => handleSelectAnswer('False')}
-                        disabled={questionTimeout || selectedAnswer !== null}
-                    >
-                        Salah
-                    </button>
+                <div className="result-card incorrect">
+                    <h3>Salah</h3>
+                    <p>{totalQuestions - correctAnswers}</p>
+                </div>
+
+                <div className="result-card total">
+                    <h3>Total</h3>
+                    <p>{totalQuestions}</p>
                 </div>
             </div>
+
+            <button onClick={resetQuiz} className="restart-btn">
+                Mulai Kuis Baru
+            </button>
         </div>
     );
 };
 
-export default Question;
+export default QuizResult;

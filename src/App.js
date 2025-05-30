@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+// Tambahkan di bagian atas App.js
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './components/Auth/Login';
 import Question from './components/Quiz/Question';
 import QuizResult from './components/Quiz/QuizResult';
-import { fetchQuestions } from './services/api.js';
+import { fetchQuestions } from './services/api';
 import useLocalStorage from './hooks/useLocalStorage';
 import './App.css';
 
@@ -18,11 +19,17 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadQuizData = async () => {
+  // Pastikan untuk membersihkan localStorage saat mulai quiz baru
+  const startQuiz = async () => {
     try {
       setLoading(true);
+      localStorage.removeItem('quizData'); // Bersihkan data sebelumnya
       const data = await fetchQuestions();
       setQuestions(data);
+      setCurrentQuestionIndex(0);
+      setAnswers([]);
+      setQuizCompleted(false);
+      setQuizStarted(true);
       setLoading(false);
     } catch (err) {
       setError(err.message);
@@ -30,73 +37,26 @@ function App() {
     }
   };
 
-  const startQuiz = () => {
-    setQuizStarted(true);
-    setCurrentQuestionIndex(0);
-    setAnswers([]);
-    setQuizCompleted(false);
-  };
-
+  // Perbaiki handleAnswer untuk memastikan quizCompleted di-set dengan benar
   const handleAnswer = (answer) => {
     const newAnswers = [...answers];
     newAnswers[currentQuestionIndex] = answer;
     setAnswers(newAnswers);
 
+    // Pindah ke soal berikutnya atau selesaikan quiz
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       setQuizCompleted(true);
-    }
-  };
-
-  const handleTimeout = () => {
-    setQuizCompleted(true);
-  };
-
-  const resetQuiz = () => {
-    setQuizStarted(false);
-    setQuizCompleted(false);
-    setCurrentQuestionIndex(0);
-    setAnswers([]);
-  };
-
-  // Load saved quiz data from localStorage
-  useEffect(() => {
-    const savedQuizData = JSON.parse(localStorage.getItem('quizData'));
-    if (savedQuizData && user) {
-      const { index, answers, completed } = savedQuizData;
-      setCurrentQuestionIndex(index);
-      setAnswers(answers);
-      setQuizCompleted(completed);
-      if (!completed) {
-        setQuizStarted(true);
-      }
-    }
-  }, [user]);
-
-  // Save quiz progress to localStorage
-  useEffect(() => {
-    if (user && quizStarted) {
-      const quizData = {
+      localStorage.setItem('quizData', JSON.stringify({
         index: currentQuestionIndex,
-        answers,
-        completed: quizCompleted
-      };
-      localStorage.setItem('quizData', JSON.stringify(quizData));
+        answers: newAnswers,
+        completed: true
+      }));
     }
-  }, [currentQuestionIndex, answers, quizCompleted, quizStarted, user]);
+  };
 
-  if (!user) {
-    return (
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login setUser={setUser} />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    );
-  }
-
+  // Perbaiki render utama
   return (
     <Router>
       <Layout user={user} setUser={setUser}>
@@ -104,12 +64,17 @@ function App() {
           <Route
             path="/"
             element={
-              quizStarted ? (
-                quizCompleted ? (
+              !user ? (
+                <Login setUser={setUser} />
+              ) : quizStarted ? (
+                quizCompleted || answers.length === questions.length ? (
                   <QuizResult
                     questions={questions}
                     answers={answers}
-                    resetQuiz={resetQuiz}
+                    resetQuiz={() => {
+                      setQuizStarted(false);
+                      setQuizCompleted(false);
+                    }}
                   />
                 ) : (
                   <Question
@@ -117,29 +82,21 @@ function App() {
                     currentIndex={currentQuestionIndex}
                     totalQuestions={questions.length}
                     handleAnswer={handleAnswer}
-                    handleTimeout={handleTimeout}
+                    handleTimeout={() => setQuizCompleted(true)}
                     loading={loading}
                     error={error}
-                    key={currentQuestionIndex}
                   />
                 )
               ) : (
-                <div className="quiz-start">
+                <div className="start-quiz-container">
                   <h2>Selamat datang, {user.name}!</h2>
-                  <p>Kuis ini terdiri dari 10 pertanyaan benar/salah.</p>
-                  <p>Anda memiliki waktu 2 menit per soal.</p>
-                  <button onClick={() => {
-                    loadQuizData();
-                    startQuiz();
-                  }} disabled={loading}>
-                    {loading ? 'Memuat soal...' : 'Mulai Kuis'}
+                  <button onClick={startQuiz} disabled={loading}>
+                    {loading ? 'Memuat...' : 'Mulai Kuis'}
                   </button>
-                  {error && <p className="error">{error}</p>}
                 </div>
               )
             }
           />
-          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>
     </Router>
