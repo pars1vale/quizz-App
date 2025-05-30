@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import Login from './components/Auth/Login';
 import Question from './components/Quiz/Question';
 import QuizResult from './components/Quiz/QuizResult';
-import { fetchQuestions } from './services/api';
+import { fetchQuestions } from './services/api.js';
 import useLocalStorage from './hooks/useLocalStorage';
 import './App.css';
 
